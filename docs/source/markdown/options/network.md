@@ -1,10 +1,27 @@
 ####> This option file is used in:
-####>   podman create, kube play, pod create, run
+####>   podman podman-container.unit.5.md.in, create, kube play, podman-kube.unit.5.md.in, pod create, podman-pod.unit.5.md.in, run
 ####> If file is edited, make sure the changes
 ####> are applicable to all of those.
+<< if is_quadlet >>
+### `Network=mode`
+<< else >>
 #### **--network**=*mode*, **--net**
+<< endif >>
 
 Set the network mode for the <<container|pod>>.
+
+<< if is_quadlet >>
+Special cases:
+
+* If the `name` of the network ends with `.network`, a Podman network called
+`systemd-$name` is used, and the generated systemd service contains
+a dependency on the `$name-network.service`. Such a network can be automatically
+created by using a `$name.network` Quadlet file. Note: the corresponding `.network` file must exist.
+
+* If the `name` ends with `.container`,
+the container will reuse the network stack of another container created by `$name.container`.
+The generated systemd service contains a dependency on `$name.service`. Note: the corresponding `.container` file must exist.
+<< endif >>
 
 Valid _mode_ values are:
 
@@ -18,7 +35,7 @@ Valid _mode_ values are:
 
     Any other options will be passed through to netavark without validation. This can be useful to pass arguments to netavark plugins.
 
-    For example, to set a static ipv4 address and a static mac address, use `--network bridge:ip=10.88.0.10,mac=44:33:22:11:00:99`.
+    For example, to set a static IPv4 address and a static mac address, use `--network bridge:ip=10.88.0.10,mac=44:33:22:11:00:99`.
 
 - _\<network name or ID\>_**[:OPTIONS,...]**: Connect to a user-defined network; this is the network name or ID from a network created by **[podman network create](podman-network-create.1.md)**. It is possible to specify the same options described under the bridge mode above. Use the **--network** option multiple times to specify additional networks. \
   For backwards compatibility it is also possible to specify comma-separated networks on the first **--network** argument, however this prevents you from using the options described under the bridge section above.
