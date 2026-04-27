@@ -657,7 +657,13 @@ func Start(mc *vmconfigs.MachineConfig, mp vmconfigs.VMProvider, opts machine.St
 		return err
 	}
 
-	// Import native CA certificates if enabled
+	// mount the volumes to the VM
+	if err := mp.MountVolumesToVM(mc, opts.Quiet); err != nil {
+		return err
+	}
+
+	// Import native CA certificates if enabled (must run after volumes are
+	// mounted so the certificate file is accessible via the mounted path)
 	if mc.ImportNativeCA {
 		if err := certificates.ImportNativeCertificates(mc, mp.VMType()); err != nil {
 			// Warn the user but continue the machine startup process
@@ -666,11 +672,6 @@ func Start(mc *vmconfigs.MachineConfig, mp vmconfigs.VMProvider, opts machine.St
 		} else if !opts.Quiet {
 			fmt.Println("The host trusted CA certificates have been imported successfully")
 		}
-	}
-
-	// mount the volumes to the VM
-	if err := mp.MountVolumesToVM(mc, opts.Quiet); err != nil {
-		return err
 	}
 
 	// update the podman/docker socket service if the host user has been modified at all (UID or Rootful)
