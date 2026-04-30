@@ -152,12 +152,16 @@ jobs:
             context:
               revdeps: "yes"
 
+  # NOTE: Breaking changes related to Podman6 will only be shipped to Fedora
+  # Rawhide (to be Fedora 45) and newer.
+  # TODO: Update dist_git_branches as and when new Fedora releases are
+  # available.
   - job: propose_downstream
     trigger: release
     update_release: false
     packages: [podman-fedora]
     dist_git_branches: &fedora_targets
-      - fedora-all
+      - fedora-rawhide
 
   - job: koji_build
     trigger: commit
