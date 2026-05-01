@@ -223,6 +223,15 @@ func ParseBuildOpts(cmd *cobra.Command, args []string, buildOpts *BuildFlagsWrap
 				return nil, fmt.Errorf("determining path to file %q: %w", containerFiles[i], err)
 			}
 			contextDir = filepath.Dir(absFile)
+			// /dev/fd cannot be used as an overlay mount lower layer, use a tmp context dir instead
+			if contextDir == "/dev/fd" || contextDir == "/proc/self/fd" {
+				tempDir, err := os.MkdirTemp("", "podman-build-context-")
+				if err != nil {
+					return nil, fmt.Errorf("creating temporary context directory: %w", err)
+				}
+				apiBuildOpts.TmpDirToClose = tempDir
+				contextDir = tempDir
+			}
 			containerFiles[i] = absFile
 			break
 		}

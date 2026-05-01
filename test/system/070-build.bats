@@ -1272,6 +1272,14 @@ EOF
     run_podman rmi -f $imgname
 }
 
+@test "podman build with process substitution" {
+    imgname="b-$(safename)"
+    run_podman build -t $imgname -f <(echo "FROM scratch")
+    is "$output" ".*COMMIT" "COMMIT seen in log"
+
+    run_podman rmi -f $imgname
+}
+
 function teardown() {
     # A timeout or other error in 'build' can leave behind stale images
     # that podman can't even see and which will cascade into subsequent
