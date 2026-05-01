@@ -1427,4 +1427,20 @@ COPY --from=img2 /etc/alpine-release /prefix-test/container-prefix.txt`
 		Expect(metadata).To(ContainSubstring("containerimage.digest"))
 		Expect(metadata).To(ContainSubstring("containerimage.descriptor"))
 	})
+
+	It("podman build --output type=local,dest=./folder outputs to ./folder", func() {
+		SkipIfRemote("--output is not supported in remote mode")
+		podmanTest.PodmanExitCleanly("build", "-f", "build/basicalpine/Containerfile", "--output", fmt.Sprintf("type=local,dest=%v", podmanTest.TempDir))
+		files, err := os.ReadDir(podmanTest.TempDir)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(len(files)).To(BeNumerically(">", 1))
+	})
+
+	// Should error because no type
+	It("podman build --output dest=./folder must fail", func() {
+		SkipIfRemote("--output is not supported in remote mode")
+		session := podmanTest.Podman([]string{"build", "-f", "build/basicalpine/Containerfile", "--output", fmt.Sprintf("dest=%v", podmanTest.TempDir)})
+		session.WaitWithDefaultTimeout()
+		Expect(session).Should(ExitWithError(125, `missing required key "type"`))
+	})
 })
