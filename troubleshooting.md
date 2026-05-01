@@ -1449,7 +1449,9 @@ Using `--userns=auto` when creating new containers does not work as long as any 
 
 #### Solution
 
-Any existing containers that were created using `--userns=keep-id` or `--userns=nomap` must first be deleted before any new container can be created with `--userns=auto`
+Any existing containers that were created using `--userns=keep-id` or `--userns=nomap` must first be deleted before any new container can be created with `--userns=auto`.
+By default, the option `--userns=keep-id` allocates all unused IDs in the user namespace.
+To avoid this, specify the `size` option, for example `--userns=keep-id:size=2000`
 
 ### 44) `sudo podman run --userns=auto` fails with `Cannot find mappings for user "containers"`
 
