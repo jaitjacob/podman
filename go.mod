@@ -64,9 +64,9 @@ require (
 	github.com/vbauerster/mpb/v8 v8.12.0
 	github.com/vishvananda/netlink v1.3.1
 	go.podman.io/buildah v1.42.1-0.20260421143840-0acb6b8cca85
-	go.podman.io/common v0.67.2-0.20260430110239-06cbc5da36f1
-	go.podman.io/image/v5 v5.39.3-0.20260430110239-06cbc5da36f1
-	go.podman.io/storage v1.62.1-0.20260430110239-06cbc5da36f1
+	go.podman.io/common v0.67.2-0.20260430194920-3ceb1b29d72d
+	go.podman.io/image/v5 v5.39.3-0.20260430194920-3ceb1b29d72d
+	go.podman.io/storage v1.62.1-0.20260430194920-3ceb1b29d72d
 	golang.org/x/crypto v0.50.0
 	golang.org/x/net v0.53.0
 	golang.org/x/sync v0.20.0
@@ -112,7 +112,7 @@ require (
 	github.com/docker/docker-credential-helpers v0.9.6 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.10.0 // indirect
 	github.com/fsouza/go-dockerclient v1.13.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -129,7 +129,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
