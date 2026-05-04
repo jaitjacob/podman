@@ -3,9 +3,11 @@
 package generate
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -19,6 +21,24 @@ import (
 	"go.podman.io/podman/v6/pkg/specgen"
 	"golang.org/x/sys/unix"
 )
+
+const devMqueue = "/dev/mqueue"
+
+func isMqueueSupported() bool {
+	f, err := os.Open("/proc/filesystems")
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) > 0 && fields[len(fields)-1] == "mqueue" {
+			return true
+		}
+	}
+	return false
+}
 
 func setProcOpts(s *specgen.SpecGenerator, g *generate.Generator) {
 	if s.ProcOpts == nil {
@@ -166,12 +186,15 @@ func SpecGenToOCI(_ context.Context, s *specgen.SpecGenerator, rt *libpod.Runtim
 
 	inUserNS := isRootless || isNewUserns
 
-	if inUserNS && s.IpcNS.IsHost() {
-		g.RemoveMount("/dev/mqueue")
+	// Check /proc/filesystems to see if the kernel supports mqueue.
+	if !isMqueueSupported() {
+		g.RemoveMount(devMqueue)
+	} else if inUserNS && s.IpcNS.IsHost() {
+		g.RemoveMount(devMqueue)
 		devMqueue := spec.Mount{
-			Destination: "/dev/mqueue",
-			Type:        define.TypeBind, // constant ?
-			Source:      "/dev/mqueue",
+			Destination: devMqueue,
+			Type:        define.TypeBind,
+			Source:      devMqueue,
 			Options:     []string{define.TypeBind, "nosuid", "noexec", "nodev"},
 		}
 		g.AddMount(devMqueue)
