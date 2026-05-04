@@ -387,13 +387,6 @@ func DefaultNamespaceOptions() (define.NamespaceOptions, error) {
 func checkAndOverrideIsolationOptions(isolation define.Isolation, options *RunOptions) error {
 	switch isolation {
 	case IsolationOCIRootless:
-		// only change the netns if the caller did not set it
-		if ns := options.NamespaceOptions.Find(string(specs.NetworkNamespace)); ns == nil {
-			if _, err := exec.LookPath("slirp4netns"); err != nil {
-				// if slirp4netns is not installed we have to use the hosts net namespace
-				options.NamespaceOptions.AddOrReplace(define.NamespaceOption{Name: string(specs.NetworkNamespace), Host: true})
-			}
-		}
 		fallthrough
 	case IsolationOCI:
 		pidns := options.NamespaceOptions.Find(string(specs.PIDNamespace))
@@ -2233,4 +2226,32 @@ func (b *Builder) createMountTargets(spec *specs.Spec) ([]copier.ConditionalRemo
 	// return the set of to-remove-now paths directly, in case the caller would prefer
 	// to clear them out itself now instead of waiting until commit-time
 	return remove, nil
+}
+
+func checkExitCodeError(err error, validExitCodes []int32) error {
+	if len(validExitCodes) == 0 {
+		return err
+	}
+	exitCode, ok := exitCodeFromError(err)
+	if !ok {
+		return err
+	}
+	if slices.Contains(validExitCodes, exitCode) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return fmt.Errorf("exit status %d is not in the valid exit codes list", exitCode)
+}
+
+func exitCodeFromError(err error) (int32, bool) {
+	if err == nil {
+		return 0, true
+	}
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		return int32(ee.ExitCode()), true
+	}
+	return 0, false
 }

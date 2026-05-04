@@ -212,7 +212,7 @@ github.com/ebitengine/purego/internal/xreflect
 # github.com/felixge/httpsnoop v1.0.4
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
-# github.com/fsnotify/fsnotify v1.10.0
+# github.com/fsnotify/fsnotify v1.10.1
 ## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
@@ -503,7 +503,6 @@ github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/runc/internal/linux
 github.com/opencontainers/runc/internal/pathrs
 github.com/opencontainers/runc/libcontainer/apparmor
-github.com/opencontainers/runc/libcontainer/devices
 # github.com/opencontainers/runtime-spec v1.3.0
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
@@ -637,8 +636,8 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# github.com/vbatts/tar-split v0.12.2
-## explicit; go 1.17
+# github.com/vbatts/tar-split v0.12.3
+## explicit; go 1.22.0
 github.com/vbatts/tar-split/archive/tar
 github.com/vbatts/tar-split/tar/asm
 github.com/vbatts/tar-split/tar/storage
@@ -699,7 +698,7 @@ go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/internal/telemetry
 go.opentelemetry.io/otel/trace/noop
-# go.podman.io/buildah v1.42.1-0.20260421143840-0acb6b8cca85
+# go.podman.io/buildah v1.42.1-0.20260501153811-377cf64e213b
 ## explicit; go 1.25.6
 go.podman.io/buildah
 go.podman.io/buildah/bind
@@ -736,7 +735,7 @@ go.podman.io/buildah/pkg/sshagent
 go.podman.io/buildah/pkg/util
 go.podman.io/buildah/pkg/volumes
 go.podman.io/buildah/util
-# go.podman.io/common v0.67.2-0.20260430194920-3ceb1b29d72d
+# go.podman.io/common v0.67.2-0.20260504145149-b5d50461d3b9
 ## explicit; go 1.25.6
 go.podman.io/common/internal
 go.podman.io/common/libimage
@@ -802,7 +801,7 @@ go.podman.io/common/pkg/umask
 go.podman.io/common/pkg/util
 go.podman.io/common/pkg/version
 go.podman.io/common/version
-# go.podman.io/image/v5 v5.39.3-0.20260430194920-3ceb1b29d72d
+# go.podman.io/image/v5 v5.39.3-0.20260504145149-b5d50461d3b9
 ## explicit; go 1.25.6
 go.podman.io/image/v5/copy
 go.podman.io/image/v5/directory
@@ -879,7 +878,7 @@ go.podman.io/image/v5/transports
 go.podman.io/image/v5/transports/alltransports
 go.podman.io/image/v5/types
 go.podman.io/image/v5/version
-# go.podman.io/storage v1.62.1-0.20260430194920-3ceb1b29d72d
+# go.podman.io/storage v1.62.1-0.20260504145149-b5d50461d3b9
 ## explicit; go 1.25.0
 go.podman.io/storage
 go.podman.io/storage/drivers
