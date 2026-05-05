@@ -179,7 +179,7 @@ func configureSystem(mc *vmconfigs.MachineConfig, dist string, ansibleConfig *vm
 		return err
 	}
 
-	if err := wslInvoke(dist, "sh", "-c", "echo wsl > /etc/containers/podman-machine"); err != nil {
+	if err := wslInvoke(dist, "sh", "-c", "echo wsl > /etc/podman-machine"); err != nil {
 		return fmt.Errorf("could not create podman-machine file for guest OS: %w", err)
 	}
 

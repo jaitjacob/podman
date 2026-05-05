@@ -323,8 +323,9 @@ pids_limit=0
 	files = append(files, File{
 		Node: Node{
 			Group: GetNodeGrp("root"),
-			Path:  "/etc/containers/podman-machine",
-			User:  GetNodeUsr("root"),
+			// Files used to /etc/containers/podman-machine but had to be moved so we do not overmount it.
+			Path: "/etc/podman-machine",
+			User: GetNodeUsr("root"),
 		},
 		FileEmbedded1: FileEmbedded1{
 			Append: nil,
