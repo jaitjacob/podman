@@ -2,10 +2,41 @@ package certificates
 
 import (
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func verifyCertificateFile(filePath string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read certificate file: %w", err)
+	}
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return fmt.Errorf("failed to decode PEM block from certificate file")
+	}
+	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+		return fmt.Errorf("failed to parse certificate: %w", err)
+	}
+	return nil
+}
+
+func TestExtractAndSaveCertificates(t *testing.T) {
+	certs := extractHostCertificates()
+	assert.NotEmpty(t, certs)
+
+	filePath := filepath.Join(t.TempDir(), "cert.pem")
+	err := saveCertificatesToPEM(certs, filePath)
+	assert.NoError(t, err)
+
+	err = verifyCertificateFile(filePath)
+	assert.NoError(t, err)
+}
 
 func TestDeduplicateCertificates(t *testing.T) {
 	certA := &x509.Certificate{Signature: []byte("sig-a")}

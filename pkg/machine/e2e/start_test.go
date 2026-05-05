@@ -311,11 +311,6 @@ var _ = Describe("podman machine start", func() {
 		Expect(listings.IsDefault(machineName2)).To(BeTrue())
 	})
 	It("machine init --now with --import-native-ca with mounted data folder", func() {
-		// Windows only
-		skipIfVmtype(define.QemuVirt, "Importing native certificates isn't supported on Linux")
-		skipIfVmtype(define.AppleHvVirt, "Importing native certificates isn't supported on macOS")
-		skipIfVmtype(define.LibKrun, "Importing native certificates isn't supported on macOS")
-
 		// Create a new machine
 		i := initMachine{}
 		initCommand := i.withImage(mb.imagePath).withImportNativeCA(true).withNow()
@@ -334,9 +329,6 @@ var _ = Describe("podman machine start", func() {
 		Expect(sshCertFile.outputToString()).To(Equal(certFileName))
 	})
 	It("machine init --now with --import-native-ca with SCP file transfer", func() {
-		skipIfVmtype(define.QemuVirt, "Importing native certificates isn't supported on Linux")
-		skipIfVmtype(define.AppleHvVirt, "Importing native certificates isn't supported on macOS")
-		skipIfVmtype(define.LibKrun, "Importing native certificates isn't supported on macOS")
 		skipIfVmtype(define.WSLVirt, "WSL doesn't allow handling volumes (the machine data folder is always mounted")
 
 		// Create a new machine
