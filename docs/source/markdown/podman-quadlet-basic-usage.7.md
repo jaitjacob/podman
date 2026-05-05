@@ -1,4 +1,4 @@
-% podman-quadlet-basic-usage(7)
+% podman-quadlet-basic-usage 7
 
 # NAME
 
