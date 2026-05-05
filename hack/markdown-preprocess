@@ -109,6 +109,11 @@ class Preprocessor():
                     raise ValueError(f"Invalid inline if/else syntax: {inner}") from e
                 continue
 
+            # Unrecognized token (e.g. `<<a|b>>` for replace_type, or `<<subcommand>>`):
+            # preserve verbatim so downstream processing can handle it.
+            if is_active():
+                out.append(m.group(0))
+
         # trailing literal
         if is_active():
             out.append(text[pos:])
