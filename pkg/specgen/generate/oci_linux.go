@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/opencontainers/runtime-tools/generate"
@@ -24,7 +25,7 @@ import (
 
 const devMqueue = "/dev/mqueue"
 
-func isMqueueSupported() bool {
+var isMqueueSupported = sync.OnceValue(func() bool {
 	f, err := os.Open("/proc/filesystems")
 	if err != nil {
 		return false
@@ -38,7 +39,7 @@ func isMqueueSupported() bool {
 		}
 	}
 	return false
-}
+})
 
 func setProcOpts(s *specgen.SpecGenerator, g *generate.Generator) {
 	if s.ProcOpts == nil {
