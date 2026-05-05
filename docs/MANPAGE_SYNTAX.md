@@ -1,4 +1,4 @@
-% podman-command(1)
+% podman-command 1
 
 ## NAME
 podman\-command - short description
