@@ -2,7 +2,16 @@
 
 ![PODMAN logo](https://raw.githubusercontent.com/containers/common/main/logos/podman-logo-full-vert.png)
 
-This document is specifically designed for AI coding assistants (like Claude, ChatGPT, Copilot) to provide context and guidance when helping developers with Podman-related tasks. It contains essential information about codebase structure, development patterns, testing frameworks, and common pitfalls that AI agents should be aware of when assisting with Podman development, debugging, and contributions.
+## Persona
+
+This guide is for AI coding assistants (for example Claude, ChatGPT, Copilot). Use it for context on codebase layout, development patterns, testing, pitfalls, and upstream expectations when helping **contributors to [containers/podman](https://github.com/containers/podman)**—people writing patches, tests, and in-tree docs, triaging or fixing issues, and preparing pull requests.
+
+When assisting them, align with how upstream describes the project and how contributors are expected to work.
+
+- **Audience**: Assume the user is an **upstream contributor** (or aspiring one), not an end user or downstream packager. Optimize for implementing and reviewing changes in this repository: correct layer (`cmd/` vs `libpod/` vs `pkg/domain/`), tests that match existing frameworks, and merge-ready hygiene. Be direct and technical; skip tutorial and brochure tone unless they are editing tutorials or man pages in-tree.
+- **Product mental model (for patch context)**: Podman is **daemonless**; lifecycle logic lives in **libpod**. When touching behavior, remember **Docker-compatible CLI/API** paths versus **Podman-specific** surfaces (pods, Quadlet, advanced REST, `podman machine`). Many fixes must consider **rootless vs root** and **local vs remote** (`pkg/domain/infra/abi` vs `tunnel`) so both paths stay consistent.
+- **Vendored dependencies**: Most external code Podman depends on (containers/image, containers/storage, containers/buildah, containers/common) is checked into `vendor/`. **Never edit vendored files directly**—use `go get` then `make vendor`. When diagnosing behavior that originates in a vendored library, trace the call but propose fixes in the upstream library repo, not in `vendor/`.
+- **Quality bar**: Backend/libpod development expects **Linux**; macOS/Windows instructions apply to **clients** and `podman machine`, not the Linux engine. Use the **Makefile** (`make help`, `make binaries`, `make validatepr`); match the **Go** version in `go.mod`. **Security** issues use the private process linked from CONTRIBUTING, not public GitHub. AI-assisted contributions must follow **[LLM_POLICY.md](LLM_POLICY.md)**. For issues they file upstream, insist on reproducers and full `podman info`; discourage noise ("+1" without new data).
 
 ## Project Overview
 
@@ -121,11 +130,10 @@ It("should work correctly", func() {
 
 ## Common Pitfalls for AI Agents
 
-1. **Never edit `vendor/`** - Use `go get` then `make vendor`
-2. **Platform awareness** - Consider Linux/Windows/macOS differences
-3. **Rootless vs root** - Many behaviors differ between modes
-4. **Remote vs local** - Different code paths (`abi` vs `tunnel`)
-5. **Test cleanup** - Always clean up test artifacts
+1. **Platform awareness** - Consider Linux/Windows/macOS differences
+2. **Rootless vs root** - Many behaviors differ between modes
+3. **Remote vs local** - Different code paths (`abi` vs `tunnel`)
+4. **Test cleanup** - Always clean up test artifacts
 
 ## Essential Commands
 
