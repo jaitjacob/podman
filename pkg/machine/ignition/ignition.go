@@ -5,17 +5,14 @@ package ignition
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 
 	"github.com/sirupsen/logrus"
 	"go.podman.io/podman/v6/pkg/machine/define"
 	"go.podman.io/podman/v6/pkg/systemd/parser"
-	"go.podman.io/storage/pkg/fileutils"
 )
 
 /*
@@ -367,161 +364,7 @@ pids_limit=0
 		})
 	}
 
-	// get certs for current user
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		logrus.Warnf("Unable to copy certs via ignition %s", err.Error())
-		return files
-	}
-
-	certFiles := getCerts(filepath.Join(userHome, ".config/containers/certs.d"), true)
-	files = append(files, certFiles...)
-
-	certFiles = getCerts(filepath.Join(userHome, ".config/docker/certs.d"), true)
-	files = append(files, certFiles...)
-
-	sslCertFileName, ok := os.LookupEnv(sslCertFile)
-	if ok {
-		if err := fileutils.Exists(sslCertFileName); err == nil {
-			certFiles = getCerts(sslCertFileName, false)
-			files = append(files, certFiles...)
-		} else {
-			logrus.Warnf("Invalid path in %s: %q", sslCertFile, err)
-		}
-	}
-
-	sslCertDirName, ok := os.LookupEnv(sslCertDir)
-	if ok {
-		if err := fileutils.Exists(sslCertDirName); err == nil {
-			certFiles = getCerts(sslCertDirName, true)
-			files = append(files, certFiles...)
-		} else {
-			logrus.Warnf("Invalid path in %s: %q", sslCertDir, err)
-		}
-	}
-	if sslCertFileName != "" || sslCertDirName != "" {
-		// If we copied certs via env then also make the to set the env in the VM.
-		files = append(files, getSSLEnvironmentFiles(sslCertFileName, sslCertDirName)...)
-	}
-
 	return files
-}
-
-func getCerts(certsDir string, isDir bool) []File {
-	var files []File
-
-	if isDir {
-		err := filepath.WalkDir(certsDir, func(path string, d fs.DirEntry, err error) error {
-			if err == nil && !d.IsDir() {
-				certPath, err := filepath.Rel(certsDir, path)
-				if err != nil {
-					logrus.Warnf("%s", err)
-					return nil
-				}
-
-				file, err := prepareCertFile(filepath.Join(certsDir, certPath), certPath)
-				if err == nil {
-					files = append(files, file)
-				}
-			}
-
-			return nil
-		})
-		if err != nil {
-			if !os.IsNotExist(err) {
-				logrus.Warnf("Unable to copy certs via ignition, error while reading certs from %s:  %s", certsDir, err.Error())
-			}
-		}
-	} else {
-		fileName := filepath.Base(certsDir)
-		file, err := prepareCertFile(certsDir, fileName)
-		if err == nil {
-			files = append(files, file)
-		}
-	}
-
-	return files
-}
-
-func prepareCertFile(fpath string, name string) (File, error) {
-	b, err := os.ReadFile(fpath)
-	if err != nil {
-		logrus.Warnf("Unable to read cert file %v", err)
-		return File{}, err
-	}
-
-	// Note path is required here as we always create a path for the linux VM
-	// even when the client run on windows so we cannot use filepath.
-	targetPath := path.Join(define.UserCertsTargetPath, name)
-
-	logrus.Debugf("Copying cert file from '%s' to '%s'.", fpath, targetPath)
-
-	file := File{
-		Node: Node{
-			Group: GetNodeGrp("root"),
-			Path:  targetPath,
-			User:  GetNodeUsr("root"),
-		},
-		FileEmbedded1: FileEmbedded1{
-			Append: nil,
-			Contents: Resource{
-				Source: EncodeDataURLPtr(string(b)),
-			},
-			Mode: IntToPtr(0o644),
-		},
-	}
-	return file, nil
-}
-
-const (
-	systemdSSLConf = "/etc/systemd/system.conf.d/podman-machine-ssl.conf"
-	envdSSLConf    = "/etc/environment.d/podman-machine-ssl.conf"
-	profileSSLConf = "/etc/profile.d/podman-machine-ssl.sh"
-	sslCertFile    = "SSL_CERT_FILE"
-	sslCertDir     = "SSL_CERT_DIR"
-)
-
-func getSSLEnvironmentFiles(sslFileName, sslDirName string) []File {
-	systemdFileContent := "[Manager]\n"
-	envdFileContent := ""
-	profileFileContent := ""
-	if sslFileName != "" {
-		// certs are written to UserCertsTargetPath see prepareCertFile()
-		// Note the mix of path/filepath is intentional and required, we want to get the name of
-		// a path on the client (i.e. windows) but then join to linux path that will be used inside the VM.
-		env := fmt.Sprintf("%s=%q\n", sslCertFile, path.Join(define.UserCertsTargetPath, filepath.Base(sslFileName)))
-		systemdFileContent += "DefaultEnvironment=" + env
-		envdFileContent += env
-		profileFileContent += "export " + env
-	}
-	if sslDirName != "" {
-		// certs are written to UserCertsTargetPath see prepareCertFile()
-		env := fmt.Sprintf("%s=%q\n", sslCertDir, define.UserCertsTargetPath)
-		systemdFileContent += "DefaultEnvironment=" + env
-		envdFileContent += env
-		profileFileContent += "export " + env
-	}
-	return []File{
-		getSSLFile(systemdSSLConf, systemdFileContent),
-		getSSLFile(envdSSLConf, envdFileContent),
-		getSSLFile(profileSSLConf, profileFileContent),
-	}
-}
-
-func getSSLFile(path, content string) File {
-	return File{
-		Node: Node{
-			Group: GetNodeGrp("root"),
-			Path:  path,
-			User:  GetNodeUsr("root"),
-		},
-		FileEmbedded1: FileEmbedded1{
-			Contents: Resource{
-				Source: EncodeDataURLPtr(content),
-			},
-			Mode: IntToPtr(0o644),
-		},
-	}
 }
 
 func getLinks() []Link {
