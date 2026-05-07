@@ -10,3 +10,6 @@ for proto in *.proto ; do
 		--go-grpc_opt=paths=source_relative --go-grpc_out . \
 	${proto}
 done
+
+# Format generated files
+gofumpt -w -- *.pb.go
