@@ -171,10 +171,6 @@ func configureSystem(mc *vmconfigs.MachineConfig, dist string, ansibleConfig *vm
 		return fmt.Errorf("could not create containers.conf for guest OS: %w", err)
 	}
 
-	if err := configureRegistries(dist); err != nil {
-		return err
-	}
-
 	if err := setupPodmanDockerSock(dist, mc.HostUser.Rootful); err != nil {
 		return err
 	}
@@ -259,15 +255,6 @@ func enableUserLinger(mc *vmconfigs.MachineConfig, dist string) error {
 	lingerCmd := "mkdir -p /var/lib/systemd/linger; touch /var/lib/systemd/linger/" + mc.SSH.RemoteUsername
 	if err := wslInvoke(dist, "sh", "-c", lingerCmd); err != nil {
 		return fmt.Errorf("could not enable linger for remote user on guest OS: %w", err)
-	}
-
-	return nil
-}
-
-func configureRegistries(dist string) error {
-	cmd := "cat > /etc/containers/registries.conf.d/999-podman-machine.conf"
-	if err := wslPipe(registriesConf, dist, "sh", "-c", cmd); err != nil {
-		return fmt.Errorf("could not configure registries on guest OS: %w", err)
 	}
 
 	return nil

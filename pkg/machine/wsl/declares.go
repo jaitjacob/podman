@@ -14,9 +14,6 @@ const containersConf = `[containers]
 cgroup_manager = "cgroupfs"
 `
 
-const registriesConf = `unqualified-search-registries=["docker.io"]
-`
-
 const appendPort = `grep -q Port\ %d /etc/ssh/sshd_config || echo Port %d >> /etc/ssh/sshd_config`
 
 const changePort = `sed -E -i 's/^Port[[:space:]]+[0-9]+/Port %d/' /etc/ssh/sshd_config`
