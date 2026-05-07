@@ -22,7 +22,9 @@ import (
 	"go.podman.io/podman/v6/pkg/machine/vmconfigs"
 	winutil "go.podman.io/podman/v6/pkg/machine/windows"
 	"go.podman.io/podman/v6/pkg/machine/wsl/wutil"
+	"go.podman.io/podman/v6/pkg/specgen"
 	"go.podman.io/podman/v6/utils"
+	"go.podman.io/storage/pkg/configfile"
 )
 
 var (
@@ -189,6 +191,19 @@ func configureSystem(mc *vmconfigs.MachineConfig, dist string, ansibleConfig *vm
 }
 
 func configureBindMounts(dist string, user string) error {
+	winPath, err := configfile.UserConfigPath()
+	if err != nil {
+		return err
+	}
+	wslPath, err := specgen.ConvertWinMountPath(winPath)
+	if err != nil {
+		return err
+	}
+
+	if err := wslPipe(fmt.Sprintf(bindMountConfigDirSystemService, wslPath), dist, "sh", "-c", "cat > "+configBindSysUnitPath); err != nil {
+		return fmt.Errorf("could not create podman config mount service file for guest OS: %w", err)
+	}
+
 	if err := wslPipe(fmt.Sprintf(bindMountSystemService, dist), dist, "sh", "-c", "cat > /etc/systemd/system/podman-mnt-bindings.service"); err != nil {
 		return fmt.Errorf("could not create podman binding service file for guest OS: %w", err)
 	}
