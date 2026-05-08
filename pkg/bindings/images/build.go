@@ -585,6 +585,18 @@ func prepareContainerFiles(containerFiles []string, contextDir string, stdinDest
 				return nil, fmt.Errorf("processing stdin: %w", err)
 			}
 			c = stdinFile
+		} else if strings.HasPrefix(c, "/dev/fd/") || strings.HasPrefix(c, "/proc/self/fd") {
+			// Handle process substitution: read from the file descriptor and create a temp file
+			fdFile, err := os.Open(c)
+			if err != nil {
+				return nil, fmt.Errorf("opening file descriptor %q: %w", c, err)
+			}
+			tempFile, err := tempManager.CreateTempFileFromReader(stdinDestination, "podman-build-fd-*", fdFile)
+			fdFile.Close()
+			if err != nil {
+				return nil, fmt.Errorf("processing file descriptor %q: %w", c, err)
+			}
+			c = tempFile
 		}
 		c = filepath.Clean(c)
 		cfDir := filepath.Dir(c)
