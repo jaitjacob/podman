@@ -1813,3 +1813,57 @@ Note: the option `-p` should not be provided when using `--network=host`
 Note: this alternative is less secure than the other two.
 For security considerations regarding using `--network=host`,
 see [**podman-run(1)**](https://docs.podman.io/en/latest/markdown/podman-run.1.html#network-mode-net).
+
+### 48) Pasta fails with `Listen failed` or rootless podman fails with `bind: permission denied`
+
+Unprivileged users on a Linux system can not bind to ports below 1024 by default.
+This limit can be configured in `/proc/sys/net/ipv4/ip_unprivileged_port_start`
+
+#### Symptom
+
+Pasta does not have the privileges to create a listening socket on a port below 1024.
+
+```
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+1024
+$ podman run --rm -d -p 80:80 docker.io/library/nginx
+Error: pasta failed with exit code 1:
+Listen failed for HOST TCP port */80: Permission denied
+Couldn't listen on requested TCP ports
+```
+
+A similar problem can be seen when using `--network=host`
+
+```
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+1024
+$ podman run --rm --network=host docker.io/traefik/whoami
+2026/05/04 13:54:20 Starting up on port 80
+2026/05/04 13:54:20 listen tcp :80: bind: permission denied
+```
+
+#### Solution
+
+Configure `ip_unprivileged_port_start` to allow unprivileged users to
+bind to port numbers 80 and above.
+
+```
+$ sudo sh -c "echo 80 > /proc/sys/net/ipv4/ip_unprivileged_port_start"
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+80
+$ podman run --rm -d -p 80:80 docker.io/library/nginx
+ad9a50a3728bf5d290fd809431a2876285c4dd9e715b70c5d25dec1e2323ff58
+```
+
+To permanently set the value `80`, create the file _/etc/sysctl.d/99-mysettings.conf_
+with the contents:
+
+```
+net.ipv4.ip_unprivileged_port_start=80
+```
+
+and reload the configuration
+
+```
+sudo sysctl --system
+```
