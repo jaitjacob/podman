@@ -1867,3 +1867,62 @@ and reload the configuration
 ```
 sudo sysctl --system
 ```
+
+### 49) Can't connect to host's main network interface
+
+Connecting from a container to a service that is listening on
+host's main network interface fails when using Pasta.
+
+#### Symptom
+
+Show the IP address of the main network interface
+
+```
+$ hostname -I
+192.168.64.3 fd06:cd88:fba4:8d1:fa83:8dc1:f5fd:d3e0
+```
+
+Result: 192.168.64.3
+
+Start a web server that listens on that IP address
+
+```
+$ addr=192.168.64.3
+$ podman run
+    --rm \
+    -d \
+    --network=host \
+    docker.io/library/python \
+      python3 -m http.server 8080 --bind $addr
+bb662dc47c32f62dc735367dde43ae488fd5b64570c2e4415f0083d6617f5dec
+```
+
+Connecting to the service fails when running curl in another container.
+
+```
+$ podman run --rm docker.io/library/fedora curl -sS ${addr}:8080
+curl: (7) Failed to connect to 192.168.64.3 port 8080 after 0 ms: Could not connect to server
+```
+
+#### Solution
+
+Alternative 1
+
+Instead of connecting to the IP address of the host's main network interface,
+connect to `host.containers.internal` or `host.docker.internal`
+
+```
+$ podman run --rm docker.io/library/fedora curl -sS host.containers.internal:8080 | head -1
+<!DOCTYPE HTML>
+```
+
+Alternative 2
+
+Instead of connecting to `host.containers.internal` or `host.docker.internal`, you can
+also connect to an arbitrary hostname such as `my.example.com`, by adding
+the option `--add-host my.example.com:host-gateway`.
+
+```
+$ podman run --rm --add-host my.example.com:host-gateway docker.io/library/fedora curl -sS my.example.com:8080 | head -1
+<!DOCTYPE HTML>
+```
