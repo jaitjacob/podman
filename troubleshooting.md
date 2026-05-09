@@ -1639,3 +1639,82 @@ Add the option `--security-opt label=disable` to disable SELinux for the Podman 
 ```
 podman run --rm --security-opt label=disable -v /var/test:/dir fedora ls /dir
 ```
+
+### 46) Creating container fails with `Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument`
+
+Specifying `podman run` command-line options related to UID/GID mapping (such as `--userns`, `--uidmap` or `--gidmap`) fails when running in a pod.
+
+#### Symptom
+
+Example 1
+
+```
+$ podman pod create pod1
+2d99a6c3d736b3b5e9f105e6c89c91ae719f954b8486d54bccb7b94dde697cde
+$ podman run --rm --pod pod1 --uidmap 0:0:2000 --name ctr1 alpine sleep 100
+Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument
+```
+
+Example 2
+
+```
+$ podman pod create --uidmap 0:0:2000 pod1
+aa445fb0163c43ca5c6400d36557914f36194b9b9917e1d51b7f57719802dc46
+$ podman run --rm --pod pod1 --uidmap 0:0:2000 --name ctr1 alpine sleep 100
+Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument
+```
+
+#### Solution
+
+Alternative 1
+
+When running containers in a pod, any UID/GID mapping should be specified
+when creating the pod and not when creating the container.
+
+In other words, options such as `--userns`, `--uidmap`, `--gidmap`, should only be passed
+to `podman pod create`.
+
+```
+podman pod create --uidmap 0:0:2000 pod1
+podman run --rm -d --pod pod1 --name ctr1 alpine sleep 100
+podman run --rm -d --pod pod1 --name ctr2 alpine sleep 100
+```
+
+Container ctr1 and container ctr2 run with the same UID/GID mapping.
+
+Alternative 2
+
+If the containers can't run with the same UID/GID mapping, run the containers in a custom network
+instead of a pod.
+
+Containers in a pod can communicate directly over 127.0.0.1. When using a custom network, the containers
+have different IP addresses. Podman provides an internal DNS server that resolves hostnames that are set with
+`--name` (quadlet directive `ContainerName=`) or `--network-alias` (quadlet directive `NetworkAlias=`).
+
+Example using pod without specifying UID/GID mapping:
+
+```
+podman pod create pod1
+podman run --pod pod1 --rm -d docker.io/library/python python3 -m http.server 8080 --bind 127.0.0.1
+podman run --pod pod1 --rm docker.io/library/fedora curl -s -S http://127.0.0.1:8080
+```
+
+Example using a custom network without specifying UID/GID mapping:
+
+```
+podman network create --opt=isolate=strict mynet
+podman run --network mynet --rm -d --name ctr1 --network-alias ctr1alias docker.io/library/python python3 -m http.server 8080 --bind 0.0.0.0
+podman run --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1:8080
+podman run --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1alias:8080
+```
+
+As the containers are not running in a pod, it's possible to run them with different UID/GID mappings.
+Add `--uidmap 0:0:2000`, `--uidmap 0:0:5000` and  `--uidmap 0:0:3000` to demonstrate
+that different UID/GID mappings are possible.
+
+```
+podman network create --opt=isolate=strict mynet
+podman run --uidmap 0:0:2000 --network mynet --rm -d --name ctr1 --network-alias ctr1alias docker.io/library/python python3 -m http.server 8080 --bind 0.0.0.0
+podman run --uidmap 0:0:5000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1:8080
+podman run --uidmap 0:0:3000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1alias:8080
+```
