@@ -1718,3 +1718,98 @@ podman run --uidmap 0:0:2000 --network mynet --rm -d --name ctr1 --network-alias
 podman run --uidmap 0:0:5000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1:8080
 podman run --uidmap 0:0:3000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1alias:8080
 ```
+
+### 47) Connecting to published port fails with `Connection reset by peer`
+
+Connecting to a published port fails with `Connection reset by peer` when the
+local address of the listening TCP socket is 127.0.0.1 in the container.
+
+#### Symptom
+
+Start a web server that is bound to 127.0.0.1 in a container.
+The container name is _test_.
+
+```
+bind=127.0.0.1
+podman run --rm -d \
+           --name test \
+           -p 8080:8080 \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/
+curl: (56) Recv failure: Connection reset by peer
+```
+
+To show the port and local address of the listening TCP socket
+in the container _test_, run
+
+```
+$ path=$(podman inspect --format '{{.NetworkSettings.SandboxKey}}' test)
+$ echo $path
+/run/user/1001/netns/netns-35f6df1f-1622-5d6d-3bbb-70f5d16e09bc
+$ podman unshare nsenter -n=$path ss -tln
+State   Recv-Q  Send-Q   Local Address:Port   Peer Address:Port
+LISTEN  0       5            127.0.0.1:8080        0.0.0.0:*
+```
+
+#### Solution
+
+Alternative 1
+
+Let the web server bind to 0.0.0.0 instead of 127.0.0.1
+
+```
+bind=0.0.0.0
+podman run --rm \
+           -d \
+           -p 127.0.0.1:8080:8080 \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/ | head -1
+<!DOCTYPE HTML>
+```
+
+If you want to also allow access from the internet, use `-p 8080:8080` instead of `-p 127.0.0.1:8080:8080`
+
+Alternative 2
+
+Use [socket activation](https://github.com/containers/podman/blob/main/docs/tutorials/socket_activation.md#socket-activation-of-containers).
+This alternative is only possible when the software in the container supports socket activation.
+
+Alternative 3
+
+Use `--network=host`
+
+Start a web server that is bound to 127.0.0.1
+
+```
+bind=127.0.0.1
+podman run --rm \
+           -d \
+           --network=host \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/ | head -1
+<!DOCTYPE HTML>
+```
+
+Note: the option `-p` should not be provided when using `--network=host`
+
+Note: this alternative is less secure than the other two.
+For security considerations regarding using `--network=host`,
+see [**podman-run(1)**](https://docs.podman.io/en/latest/markdown/podman-run.1.html#network-mode-net).
