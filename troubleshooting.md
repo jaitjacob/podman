@@ -1926,3 +1926,63 @@ the option `--add-host my.example.com:host-gateway`.
 $ podman run --rm --add-host my.example.com:host-gateway docker.io/library/fedora curl -sS my.example.com:8080 | head -1
 <!DOCTYPE HTML>
 ```
+
+### 50) Cannot enable a quadlet unit
+
+A user wants to configure a container unit service to start automatically on system boot.
+The user mistakenly runs `systemctl enable` instead of adding an install section
+to the container unit file. The following error message is printed
+`Failed to enable unit: Unit` ... `is transient or generated`.
+
+#### Symptom
+
+Create directory
+
+```
+mkdir -p ~/.config/containers/systemd
+```
+
+Create file `~/.config/containers/systemd/my.container` containing
+
+```
+[Container]
+Image=docker.io/library/alpine sh -c "sleep inf"
+```
+
+Reload the systemd manager
+
+```
+systemctl --user daemon-reload
+```
+
+Enable linger
+
+```
+sudo loginctl enable-linger $USER
+```
+
+Despite being incorrect, some users might believe that the following
+command is needed
+
+```
+systemctl --user enable my.service
+```
+
+The command fails with the following error message
+
+```
+Failed to enable unit: Unit /run/user/1000/systemd/generator/my.service is transient or generated
+```
+
+#### Solution
+
+Quadlets should not be enabled with `systemctl --user enable`, instead add
+an install section to the container unit.
+
+```
+[Install]
+WantedBy=multi-user.target
+```
+
+For details,
+see [**podman-systemd.unit(5)**](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#enabling-unit-files).
