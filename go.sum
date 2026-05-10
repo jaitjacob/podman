@@ -299,8 +299,8 @@ github.com/opencontainers/runtime-tools v0.9.1-0.20260316125833-8a4db579f5c8 h1:
 github.com/opencontainers/runtime-tools v0.9.1-0.20260316125833-8a4db579f5c8/go.mod h1:DKDEfzxvRkoQ6n9TGhxQgg2IM1lY4aM0eaQP4e3oElw=
 github.com/opencontainers/selinux v1.13.1 h1:A8nNeceYngH9Ow++M+VVEwJVpdFmrlxsN22F+ISDCJE=
 github.com/opencontainers/selinux v1.13.1/go.mod h1:S10WXZ/osk2kWOYKy1x2f/eXF5ZHJoUs8UU/2caNRbg=
-github.com/openshift/imagebuilder v1.2.20 h1:oMGLqJ9Z3xHitzBCL+HECg/c9KCV/Rh7IKJqbSaBnqk=
-github.com/openshift/imagebuilder v1.2.20/go.mod h1:KyPwIOzCzleBWdDmApxog8sj2SO9l5g4IWPv7S67Fgs=
+github.com/openshift/imagebuilder v1.2.21 h1:XX0tZVznWTxzYevvNVZ/0eeTzmgY6cfcT4/xjs5ToyU=
+github.com/openshift/imagebuilder v1.2.21/go.mod h1:+L09sXUQ0RPdCU1tmzKrfBhqMlYvZtaA3MHb7aTjVU8=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
