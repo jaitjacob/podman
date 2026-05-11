@@ -1640,3 +1640,350 @@ Add the option `--security-opt label=disable` to disable SELinux for the Podman 
 ```
 podman run --rm --security-opt label=disable -v /var/test:/dir fedora ls /dir
 ```
+
+### 46) Creating container fails with `Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument`
+
+Specifying `podman run` command-line options related to UID/GID mapping (such as `--userns`, `--uidmap` or `--gidmap`) fails when running in a pod.
+
+#### Symptom
+
+Example 1
+
+```
+$ podman pod create pod1
+2d99a6c3d736b3b5e9f105e6c89c91ae719f954b8486d54bccb7b94dde697cde
+$ podman run --rm --pod pod1 --uidmap 0:0:2000 --name ctr1 alpine sleep 100
+Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument
+```
+
+Example 2
+
+```
+$ podman pod create --uidmap 0:0:2000 pod1
+aa445fb0163c43ca5c6400d36557914f36194b9b9917e1d51b7f57719802dc46
+$ podman run --rm --pod pod1 --uidmap 0:0:2000 --name ctr1 alpine sleep 100
+Error: cannot specify a new uid/gid map when entering a pod with an infra container: invalid argument
+```
+
+#### Solution
+
+Alternative 1
+
+When running containers in a pod, any UID/GID mapping should be specified
+when creating the pod and not when creating the container.
+
+In other words, options such as `--userns`, `--uidmap`, `--gidmap`, should only be passed
+to `podman pod create`.
+
+```
+podman pod create --uidmap 0:0:2000 pod1
+podman run --rm -d --pod pod1 --name ctr1 alpine sleep 100
+podman run --rm -d --pod pod1 --name ctr2 alpine sleep 100
+```
+
+Container ctr1 and container ctr2 run with the same UID/GID mapping.
+
+Alternative 2
+
+If the containers can't run with the same UID/GID mapping, run the containers in a custom network
+instead of a pod.
+
+Containers in a pod can communicate directly over 127.0.0.1. When using a custom network, the containers
+have different IP addresses. Podman provides an internal DNS server that resolves hostnames that are set with
+`--name` (quadlet directive `ContainerName=`) or `--network-alias` (quadlet directive `NetworkAlias=`).
+
+Example using pod without specifying UID/GID mapping:
+
+```
+podman pod create pod1
+podman run --pod pod1 --rm -d docker.io/library/python python3 -m http.server 8080 --bind 127.0.0.1
+podman run --pod pod1 --rm docker.io/library/fedora curl -s -S http://127.0.0.1:8080
+```
+
+Example using a custom network without specifying UID/GID mapping:
+
+```
+podman network create --opt=isolate=strict mynet
+podman run --network mynet --rm -d --name ctr1 --network-alias ctr1alias docker.io/library/python python3 -m http.server 8080 --bind 0.0.0.0
+podman run --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1:8080
+podman run --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1alias:8080
+```
+
+As the containers are not running in a pod, it's possible to run them with different UID/GID mappings.
+Add `--uidmap 0:0:2000`, `--uidmap 0:0:5000` and  `--uidmap 0:0:3000` to demonstrate
+that different UID/GID mappings are possible.
+
+```
+podman network create --opt=isolate=strict mynet
+podman run --uidmap 0:0:2000 --network mynet --rm -d --name ctr1 --network-alias ctr1alias docker.io/library/python python3 -m http.server 8080 --bind 0.0.0.0
+podman run --uidmap 0:0:5000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1:8080
+podman run --uidmap 0:0:3000 --network mynet --rm docker.io/library/fedora curl -s -S http://ctr1alias:8080
+```
+
+### 47) Connecting to published port fails with `Connection reset by peer`
+
+Connecting to a published port fails with `Connection reset by peer` when the
+local address of the listening TCP socket is 127.0.0.1 in the container.
+
+#### Symptom
+
+Start a web server that is bound to 127.0.0.1 in a container.
+The container name is _test_.
+
+```
+bind=127.0.0.1
+podman run --rm -d \
+           --name test \
+           -p 8080:8080 \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/
+curl: (56) Recv failure: Connection reset by peer
+```
+
+To show the port and local address of the listening TCP socket
+in the container _test_, run
+
+```
+$ path=$(podman inspect --format '{{.NetworkSettings.SandboxKey}}' test)
+$ echo $path
+/run/user/1001/netns/netns-35f6df1f-1622-5d6d-3bbb-70f5d16e09bc
+$ podman unshare nsenter -n=$path ss -tln
+State   Recv-Q  Send-Q   Local Address:Port   Peer Address:Port
+LISTEN  0       5            127.0.0.1:8080        0.0.0.0:*
+```
+
+#### Solution
+
+Alternative 1
+
+Let the web server bind to 0.0.0.0 instead of 127.0.0.1
+
+```
+bind=0.0.0.0
+podman run --rm \
+           -d \
+           -p 127.0.0.1:8080:8080 \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/ | head -1
+<!DOCTYPE HTML>
+```
+
+If you want to also allow access from the internet, use `-p 8080:8080` instead of `-p 127.0.0.1:8080:8080`
+
+Alternative 2
+
+Use [socket activation](https://github.com/containers/podman/blob/main/docs/tutorials/socket_activation.md#socket-activation-of-containers).
+This alternative is only possible when the software in the container supports socket activation.
+
+Alternative 3
+
+Use `--network=host`
+
+Start a web server that is bound to 127.0.0.1
+
+```
+bind=127.0.0.1
+podman run --rm \
+           -d \
+           --network=host \
+           docker.io/library/python \
+             python3 -m http.server 8080 --bind $bind
+```
+
+Run curl to access the web server
+
+```
+$ curl -s -S 127.0.0.1:8080/ | head -1
+<!DOCTYPE HTML>
+```
+
+Note: the option `-p` should not be provided when using `--network=host`
+
+Note: this alternative is less secure than the other two.
+For security considerations regarding using `--network=host`,
+see [**podman-run(1)**](https://docs.podman.io/en/latest/markdown/podman-run.1.html#network-mode-net).
+
+### 48) Pasta fails with `Listen failed` or rootless podman fails with `bind: permission denied`
+
+Unprivileged users on a Linux system can not bind to ports below 1024 by default.
+This limit can be configured in `/proc/sys/net/ipv4/ip_unprivileged_port_start`
+
+#### Symptom
+
+Pasta does not have the privileges to create a listening socket on a port below 1024.
+
+```
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+1024
+$ podman run --rm -d -p 80:80 docker.io/library/nginx
+Error: pasta failed with exit code 1:
+Listen failed for HOST TCP port */80: Permission denied
+Couldn't listen on requested TCP ports
+```
+
+A similar problem can be seen when using `--network=host`
+
+```
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+1024
+$ podman run --rm --network=host docker.io/traefik/whoami
+2026/05/04 13:54:20 Starting up on port 80
+2026/05/04 13:54:20 listen tcp :80: bind: permission denied
+```
+
+#### Solution
+
+Configure `ip_unprivileged_port_start` to allow unprivileged users to
+bind to port numbers 80 and above.
+
+```
+$ sudo sh -c "echo 80 > /proc/sys/net/ipv4/ip_unprivileged_port_start"
+$ cat /proc/sys/net/ipv4/ip_unprivileged_port_start
+80
+$ podman run --rm -d -p 80:80 docker.io/library/nginx
+ad9a50a3728bf5d290fd809431a2876285c4dd9e715b70c5d25dec1e2323ff58
+```
+
+To permanently set the value `80`, create the file _/etc/sysctl.d/99-mysettings.conf_
+with the contents:
+
+```
+net.ipv4.ip_unprivileged_port_start=80
+```
+
+and reload the configuration
+
+```
+sudo sysctl --system
+```
+
+### 49) Can't connect to host's main network interface
+
+Connecting from a container to a service that is listening on
+host's main network interface fails when using Pasta.
+
+#### Symptom
+
+Show the IP address of the main network interface
+
+```
+$ hostname -I
+192.168.64.3 fd06:cd88:fba4:8d1:fa83:8dc1:f5fd:d3e0
+```
+
+Result: 192.168.64.3
+
+Start a web server that listens on that IP address
+
+```
+$ addr=192.168.64.3
+$ podman run
+    --rm \
+    -d \
+    --network=host \
+    docker.io/library/python \
+      python3 -m http.server 8080 --bind $addr
+bb662dc47c32f62dc735367dde43ae488fd5b64570c2e4415f0083d6617f5dec
+```
+
+Connecting to the service fails when running curl in another container.
+
+```
+$ podman run --rm docker.io/library/fedora curl -sS ${addr}:8080
+curl: (7) Failed to connect to 192.168.64.3 port 8080 after 0 ms: Could not connect to server
+```
+
+#### Solution
+
+Alternative 1
+
+Instead of connecting to the IP address of the host's main network interface,
+connect to `host.containers.internal` or `host.docker.internal`
+
+```
+$ podman run --rm docker.io/library/fedora curl -sS host.containers.internal:8080 | head -1
+<!DOCTYPE HTML>
+```
+
+Alternative 2
+
+Instead of connecting to `host.containers.internal` or `host.docker.internal`, you can
+also connect to an arbitrary hostname such as `my.example.com`, by adding
+the option `--add-host my.example.com:host-gateway`.
+
+```
+$ podman run --rm --add-host my.example.com:host-gateway docker.io/library/fedora curl -sS my.example.com:8080 | head -1
+<!DOCTYPE HTML>
+```
+
+### 50) Cannot enable a quadlet unit
+
+A user wants to configure a container unit service to start automatically on system boot.
+The user mistakenly runs `systemctl enable` instead of adding an install section
+to the container unit file. The following error message is printed
+`Failed to enable unit: Unit` ... `is transient or generated`.
+
+#### Symptom
+
+Create directory
+
+```
+mkdir -p ~/.config/containers/systemd
+```
+
+Create file `~/.config/containers/systemd/my.container` containing
+
+```
+[Container]
+Image=docker.io/library/alpine sh -c "sleep inf"
+```
+
+Reload the systemd manager
+
+```
+systemctl --user daemon-reload
+```
+
+Enable linger
+
+```
+sudo loginctl enable-linger $USER
+```
+
+Despite being incorrect, some users might believe that the following
+command is needed
+
+```
+systemctl --user enable my.service
+```
+
+The command fails with the following error message
+
+```
+Failed to enable unit: Unit /run/user/1000/systemd/generator/my.service is transient or generated
+```
+
+#### Solution
+
+Quadlets should not be enabled with `systemctl --user enable`, instead add
+an install section to the container unit.
+
+```
+[Install]
+WantedBy=multi-user.target
+```
+
+For details,
+see [**podman-systemd.unit(5)**](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#enabling-unit-files).
