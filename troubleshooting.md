@@ -531,8 +531,9 @@ Any access inside the container is rejected with "Permission denied".
 
 The runtime uses `setgroups(2)` hence the process loses all additional groups
 the non-root user has. Use the `--group-add keep-groups` flag to pass the
-user's supplementary group access into the container. Currently only available
-with the `crun` OCI runtime.
+user's supplementary group access into the container. For it to work,
+the container itself must not call `setgroups()`.
+Currently only available with the `crun` OCI runtime.
 
 ### 21) A rootless container running in detached mode is closed at logout
 <!-- This is the same as section 17 above and should be deleted -->
