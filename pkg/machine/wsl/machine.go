@@ -22,7 +22,9 @@ import (
 	"go.podman.io/podman/v6/pkg/machine/vmconfigs"
 	winutil "go.podman.io/podman/v6/pkg/machine/windows"
 	"go.podman.io/podman/v6/pkg/machine/wsl/wutil"
+	"go.podman.io/podman/v6/pkg/specgen"
 	"go.podman.io/podman/v6/utils"
+	"go.podman.io/storage/pkg/configfile"
 )
 
 var (
@@ -169,15 +171,11 @@ func configureSystem(mc *vmconfigs.MachineConfig, dist string, ansibleConfig *vm
 		return fmt.Errorf("could not create containers.conf for guest OS: %w", err)
 	}
 
-	if err := configureRegistries(dist); err != nil {
-		return err
-	}
-
 	if err := setupPodmanDockerSock(dist, mc.HostUser.Rootful); err != nil {
 		return err
 	}
 
-	if err := wslInvoke(dist, "sh", "-c", "echo wsl > /etc/containers/podman-machine"); err != nil {
+	if err := wslInvoke(dist, "sh", "-c", "echo wsl > /etc/podman-machine"); err != nil {
 		return fmt.Errorf("could not create podman-machine file for guest OS: %w", err)
 	}
 
@@ -189,6 +187,19 @@ func configureSystem(mc *vmconfigs.MachineConfig, dist string, ansibleConfig *vm
 }
 
 func configureBindMounts(dist string, user string) error {
+	winPath, err := configfile.UserConfigPath()
+	if err != nil {
+		return err
+	}
+	wslPath, err := specgen.ConvertWinMountPath(winPath)
+	if err != nil {
+		return err
+	}
+
+	if err := wslPipe(fmt.Sprintf(bindMountConfigDirSystemService, wslPath), dist, "sh", "-c", "cat > "+configBindSysUnitPath); err != nil {
+		return fmt.Errorf("could not create podman config mount service file for guest OS: %w", err)
+	}
+
 	if err := wslPipe(fmt.Sprintf(bindMountSystemService, dist), dist, "sh", "-c", "cat > /etc/systemd/system/podman-mnt-bindings.service"); err != nil {
 		return fmt.Errorf("could not create podman binding service file for guest OS: %w", err)
 	}
@@ -244,15 +255,6 @@ func enableUserLinger(mc *vmconfigs.MachineConfig, dist string) error {
 	lingerCmd := "mkdir -p /var/lib/systemd/linger; touch /var/lib/systemd/linger/" + mc.SSH.RemoteUsername
 	if err := wslInvoke(dist, "sh", "-c", lingerCmd); err != nil {
 		return fmt.Errorf("could not enable linger for remote user on guest OS: %w", err)
-	}
-
-	return nil
-}
-
-func configureRegistries(dist string) error {
-	cmd := "cat > /etc/containers/registries.conf.d/999-podman-machine.conf"
-	if err := wslPipe(registriesConf, dist, "sh", "-c", cmd); err != nil {
-		return fmt.Errorf("could not configure registries on guest OS: %w", err)
 	}
 
 	return nil

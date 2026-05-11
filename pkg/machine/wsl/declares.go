@@ -14,9 +14,6 @@ const containersConf = `[containers]
 cgroup_manager = "cgroupfs"
 `
 
-const registriesConf = `unqualified-search-registries=["docker.io"]
-`
-
 const appendPort = `grep -q Port\ %d /etc/ssh/sshd_config || echo Port %d >> /etc/ssh/sshd_config`
 
 const changePort = `sed -E -i 's/^Port[[:space:]]+[0-9]+/Port %d/' /etc/ssh/sshd_config`
@@ -104,6 +101,18 @@ const overrideSysusers = `[Service]
 LoadCredential=
 `
 
+const bindMountConfigDirSystemService = `
+[Unit]
+Description=Bind mount for config directory
+Before=podman.socket
+
+[Service]
+RemainAfterExit=true
+Type=oneshot
+ExecStart=mount --bind %[1]s /etc/containers
+ExecStop=umount /etc/containers
+`
+
 const bindMountSystemService = `
 [Unit]
 Description=Bind mount for system podman sockets
@@ -153,11 +162,16 @@ const (
 	bindSysUnitWant        = sysSystemdWants + "/" + bindUnitFileName
 	podmanSocketDropin     = "podman.socket.d"
 	podmanSocketDropinPath = sysSystemdPath + "/" + podmanSocketDropin
+
+	configBindSysUnitName = "podman-mnt-config.service"
+	configBindSysUnitPath = sysSystemdPath + "/" + configBindSysUnitName
+	configBindSysUnitWant = sysSystemdWants + "/" + configBindSysUnitName
 )
 
 const configBindServices = "mkdir -p " + userSystemdWants + " " + sysSystemdWants + " " + podmanSocketDropinPath + "\n" +
 	"ln -fs " + bindUserUnitPath + " " + bindUserUnitWant + "\n" +
-	"ln -fs " + bindSysUnitPath + " " + bindSysUnitWant + "\n"
+	"ln -fs " + bindSysUnitPath + " " + bindSysUnitWant + "\n" +
+	"ln -fs " + configBindSysUnitPath + " " + configBindSysUnitWant + "\n"
 
 const overrideSocketGroup = `
 [Socket]
