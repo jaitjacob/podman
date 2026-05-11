@@ -81,8 +81,8 @@ github.com/containernetworking/plugins/pkg/ns
 # github.com/containers/common v0.64.2
 ## explicit; go 1.23.3
 github.com/containers/common/pkg/strongunits
-# github.com/containers/gvisor-tap-vsock v0.8.8
-## explicit; go 1.24.0
+# github.com/containers/gvisor-tap-vsock v0.8.9
+## explicit; go 1.25.0
 github.com/containers/gvisor-tap-vsock/pkg/types
 # github.com/containers/libhvee v0.11.0
 ## explicit; go 1.25.0
