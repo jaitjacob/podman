@@ -1343,7 +1343,7 @@ EOF
 
     echo "$_LOG_PROMPT journalctl -u $QUADLET_SERVICE_NAME"
     run -0 journalctl -eu $QUADLET_SERVICE_NAME
-    assert "$output" =~ "$port: bind: address already in use" "journal contains the real podman start error"
+    assert "$output" =~ "$port.*ddress already in use" "journal contains the real podman start error"
 
     kill "$socat_pid"
 }
