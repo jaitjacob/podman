@@ -224,6 +224,22 @@ loop: // break out of for/select infinite loop
 			if pushReport != nil {
 				digestStr = pushReport.ManifestDigest
 			}
+			// Match Docker's behaviour: emit the manifest digest as an
+			// `aux` JSON trailer at the end of the push stream so clients
+			// can recover it without round-tripping the registry.
+			auxPayload, auxErr := json.Marshal(struct {
+				Tag    string `json:"Tag"`
+				Digest string `json:"Digest"`
+				Size   int    `json:"Size"`
+			}{
+				Tag:    tag,
+				Digest: digestStr,
+				Size:   len(rawManifest),
+			})
+			if auxErr == nil {
+				raw := json.RawMessage(auxPayload)
+				report.Aux = &raw
+			}
 			report.Status = fmt.Sprintf("%s: digest: %s size: %d", tag, digestStr, len(rawManifest))
 			if err := enc.Encode(report); err != nil {
 				logrus.Warnf("Failed to json encode error %q", err.Error())

@@ -43,6 +43,16 @@ s1=$(jq -r .status <<<"${lines[1]}")
 like "$s1" "mytag: digest: sha256:[0-9a-f]\{64\} size: [0-9]\+" \
      "Push to local registry: second status line"
 
+# Verify the `aux` trailer is emitted alongside the legacy status line,
+# matching Docker's behaviour. Clients (e.g. the Docker SDK) read
+# `aux.Digest` to recover the registry-side manifest digest.
+aux_tag=$(jq -r '.aux.Tag // empty' <<<"${lines[1]}")
+aux_digest=$(jq -r '.aux.Digest // empty' <<<"${lines[1]}")
+aux_size=$(jq -r '.aux.Size // empty' <<<"${lines[1]}")
+is   "$aux_tag"    "mytag"                       "Push to local registry: aux.Tag"
+like "$aux_digest" "sha256:[0-9a-f]\{64\}"       "Push to local registry: aux.Digest"
+like "$aux_size"   "[0-9]\+"                     "Push to local registry: aux.Size"
+
 # Push to local registry using the libpod endpoint with quiet=false...
 # First create a new tag for the image to push
 t POST "libpod/images/$IMAGE/tag?repo=localhost:$REGISTRY_PORT/myrepo&tag=quiet-false" 201
