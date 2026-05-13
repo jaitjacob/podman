@@ -998,13 +998,16 @@ func AutocompleteInspect(cmd *cobra.Command, args []string, toComplete string) (
 	pods, _ := getPods(cmd, toComplete, completeDefault)
 	networks, _ := getNetworks(cmd, toComplete, completeDefault)
 	volumes, _ := getVolumes(cmd, toComplete)
+	artifact, _ := getArtifacts(cmd, toComplete)
 
-	suggestions := make([]string, 0, len(containers)+len(images)+len(pods)+len(networks)+len(volumes))
+	suggestions := make([]string, 0, len(containers)+len(images)+len(pods)+len(networks)+len(volumes)+len(artifact))
 	suggestions = append(suggestions, containers...)
 	suggestions = append(suggestions, images...)
 	suggestions = append(suggestions, pods...)
 	suggestions = append(suggestions, networks...)
 	suggestions = append(suggestions, volumes...)
+	suggestions = append(suggestions, artifact...)
+
 	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }
 
