@@ -802,6 +802,7 @@ nameserver 8.8.8.8" "nameserver order is correct"
                 if [[ $status -eq 0 ]]; then
                     break
                 fi
+                echo "socat output: $output"
                 sleep 0.5
                 retries=$((retries -1))
             done
