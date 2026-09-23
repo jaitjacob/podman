@@ -1,0 +1,30 @@
+name: Unassign Command
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  unassign:
+    # Only run on issue comments (not PR comments)
+    if: |
+      !github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/unassign') &&
+      github.repository == 'jaitjacob/podman'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Remove the commenter from the issue assignees
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          if gh api "repos/${REPO}/issues/${ISSUE_NUMBER}/assignees" -X DELETE -f "assignees[]=${COMMENTER}" --silent; then
+            echo "Successfully removed @${COMMENTER} from issue #${ISSUE_NUMBER}"
+          else
+            echo "Failed to remove @${COMMENTER} from issue #${ISSUE_NUMBER}"
+            exit 1
+          fi
