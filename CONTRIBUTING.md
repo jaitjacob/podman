@@ -52,6 +52,7 @@ If you want to work on a specific issue that is already assigned but does not ap
 If they do not respond after several days, you can notify a maintainer to have the issue reassigned.
 When working on an issue, please assign it to yourself.
 You can use the `/assign` bot command in a comment on an issue to assign it to yourself.
+If you no longer intend to continue workin on an issue, use `/unassign` to remove yourself from its assignees.
 If you are a maintainer of Podman project, please following the [instructions](https://github.com/podman-container-tools/podman/blob/main/TRIAGE.md) to triage new issues.
 
 ## Contributing to Podman
